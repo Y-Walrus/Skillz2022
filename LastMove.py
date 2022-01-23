@@ -12,4 +12,24 @@ import itertools
 import traceback
 import abc
 
+def Yegor():
+    x = input("Enter your name:")
+    print("Hello"+x)
+
+def Ezert(x):
+    for i in range(1, x):
+        x=x*i
+    return x
+
+def Ezert2(x):
+    if(x>1):
+        return x*Ezert2(x-1)
+    return x
+
+print(Ezert2(5))
+
+
+
+
+
 # note functions we are not allowed to use
