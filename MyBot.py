@@ -26,3 +26,6 @@ def do_turn(game):
     :type game: Game
     """
     print("hi")
+
+
+do_turn(Game(0))
