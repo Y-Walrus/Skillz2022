@@ -20,7 +20,7 @@ from penguin_game import *
 
 # note that there are functions we are not allowed to use
 
-def icebergs_distances(yegor_ice, team, lowest_to_highest=True):
+def icebergs_distances(game, yegor_ice, team, lowest_to_highest=True):
     '''
     The function sorts all icebergs by distances from iceberg yegor_ice
     :param yegor_ice: The iceberg that we check the distances from.
@@ -38,12 +38,14 @@ def icebergs_distances(yegor_ice, team, lowest_to_highest=True):
     elif team == "enemy":
         icebergs = game.get_enemy_icebergs()
 
+    else:
+        print("THAT'S A PROBLEM!")  # TODO: potential fail here
     yegor_list = [ice for ice in icebergs if ice != yegor_ice]
 
-    return yegor_list.sort(key=lambda x: yegor_ice.get_turns_till_arrival(x), reversed=lowest_to_highest)
+    return yegor_list.sort(key=lambda x: yegor_ice.get_turns_till_arrival(x), reverse=lowest_to_highest)
 
 
-def icebergs_amount(team, lowest_to_highest=True):
+def icebergs_amount(game, team, lowest_to_highest=True):
     '''
     The function sorts all icebergs by amount of penguins
     :param
@@ -51,6 +53,7 @@ def icebergs_amount(team, lowest_to_highest=True):
     :return:
     :rtype:
     '''
+
     if team == "all":
         icebergs = game.get_all_icebergs()
 
@@ -60,9 +63,11 @@ def icebergs_amount(team, lowest_to_highest=True):
     elif team == "enemy":
         icebergs = game.get_enemy_icebergs()
 
+    else:
+        print("THAT'S A PROBLEM!")  # TODO: potential fail here
     yegor_list = [ice for ice in icebergs]
 
-    return yegor_list.sort(key=lambda x: x.penguin_amount, reversed=lowest_to_highest)
+    return yegor_list.sort(key=lambda x: x.penguin_amount, reverse=lowest_to_highest)
 
 
 def enemy_penguins_at_arrival(game, my, enemy):
@@ -102,11 +107,11 @@ def yael(game):
         # TODO: to consider collisions
         if enemies_list:
             maxim = max(enemies_list, key=lambda x: my_iceberg.get_turns_till_arrival(x) / (
-                        my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, x)))
+                    my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, x)))
             maxes.append((my_iceberg, maxim, my_iceberg.get_turns_till_arrival(maxim) / (
-                        my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, maxim))))
+                    my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, maxim))))
 
-    print maxes
+    print(maxes)
     if maxes:
         return max(maxes, key=lambda x: x[2])
     else:
@@ -121,7 +126,7 @@ def do_turn(game):
     :type game: Game
     """
 
-
+    # TODO: defend this code or change it
     if game.turn == 1:
         game.get_my_icebergs()[0].upgrade()
     elif game.turn == 7:
@@ -131,16 +136,16 @@ def do_turn(game):
     elif game.turn == 19:
         for neutral_iceberg in game.get_neutral_icebergs():
             if neutral_iceberg.id == 7:
-                ice = neutral_iceberg
+                ice = neutral_iceberg  # TODO: might not be assigned
         game.get_my_icebergs()[0].send_penguins(ice, 13)  # consider sending each turn all production to the orange
     elif game.turn == 22:
         for neutral_iceberg in game.get_neutral_icebergs():
             if neutral_iceberg.id == 7:
-                ice = neutral_iceberg
+                ice = neutral_iceberg  # TODO: might not be assigned
         game.get_my_icebergs()[1].send_penguins(ice, 5)
     elif game.turn > 22:
         best_move = yael(game)
-        print best_move
+        print(best_move)
         if best_move != None:
             ene_peng_at_arr = best_move[1].penguin_amount + best_move[1].penguins_per_turn * best_move[
                 0].get_turns_till_arrival(best_move[1])
