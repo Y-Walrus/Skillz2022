@@ -92,8 +92,8 @@ def enemy_penguins_at_arrival(game, my, enemy):
 
 def yael(game):
     '''
-    The function
-    :param
+    The function chooses the best combination of attacking-attacked icebergs
+    :param game
     :type :
     :return:
     :rtype:
@@ -118,6 +118,34 @@ def yael(game):
         return None
 
 
+def yegor_yael(game):
+    """
+    Evaluates our situation in comparison to the enemy's situation
+    :param: game
+    :type: game
+    :return: numEvaluate
+    :rtype: penguin
+    """
+    my_penguins = sum([ice.penguin_amount for ice in game.get_my_icebergs()])
+    my_penguins += sum([ice.penguin_amount for ice in game.get_my_penguin_groups()])
+
+    enemy_penguins = sum([ice.penguin_amount for ice in game.get_enemy_icebergs()])
+    enemy_penguins += sum([ice.penguin_amount for ice in game.get_enemy_penguin_groups()])
+
+    my_production = sum([ice.penguins_per_turn for ice in game.get_my_icebergs()])
+    enemy_production = sum([ice.penguins_per_turn for ice in game.get_enemy_icebergs()])
+    my_penguins += my_production * 20
+    enemy_penguins += enemy_production * 20
+
+    return my_penguins - enemy_penguins
+
+
+def get_all_distances(game):
+    for ice_a in game.get_all_icebergs():
+        for ice_b in game.get_all_icebergs():
+            print(ice_a.get_turns_till_arrival(ice_b))
+
+
 def do_turn(game):
     """
     Makes the bot run a single turn
@@ -126,6 +154,8 @@ def do_turn(game):
     :type game: Game
     """
 
+    print(yegor_yael(game))
+    print(get_all_distances(game))
     # TODO: defend this code or change it
     if game.turn == 1:
         game.get_my_icebergs()[0].upgrade()
@@ -146,7 +176,7 @@ def do_turn(game):
     elif game.turn > 22:
         best_move = yael(game)
         print(best_move)
-        if best_move != None:
+        if best_move is not None:
             ene_peng_at_arr = best_move[1].penguin_amount + best_move[1].penguins_per_turn * best_move[
                 0].get_turns_till_arrival(best_move[1])
             best_move[0].send_penguins(best_move[1], enemy_penguins_at_arrival(game, best_move[0], best_move[1]) + 1)
