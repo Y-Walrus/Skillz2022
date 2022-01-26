@@ -86,6 +86,7 @@ def enemy_penguins_at_arrival(game, my, enemy):
             amount += pg.penguin_amount
 
     return enemy.penguin_amount + enemy.penguins_per_turn * my.get_turns_till_arrival(enemy)
+    # return amount - works bad (which is probably logical)
 
     # or (pg.destination==my and pg.source==enemy):
 
@@ -153,6 +154,9 @@ def yegortziahu(game, my_iceberg):
         return my_iceberg.penguin_amount + my_iceberg.penguins_per_turn * 20 - sum(
             [my_iceberg.get_turns_till_arrival(ice) for ice in game.get_my_icebergs() if my_iceberg != ice]) / (
                            len(game.get_my_icebergs()) - 1)
+        #return my_iceberg.penguins_per_turn * 20 - sum(
+        #    [my_iceberg.get_turns_till_arrival(ice) for ice in game.get_my_icebergs() if my_iceberg != ice]) / (
+        #                   len(game.get_my_icebergs()) - 1)
 
 
 def iceberg_values(game):
@@ -162,16 +166,16 @@ def iceberg_values(game):
     return sorted(yegor_list, key=lambda x: x[1], reverse=True)
 
 
-def help_barel(iceberg_in_trouble):
+def help_barel(game, iceberg_in_trouble):
     owner = 1
     real_amount = iceberg_in_trouble.amount
-    attackers = [(-ene.penguin_amount, ene.turns_till_arrival) for ene in get_enemy_penguin_groups if
+    attackers = [(-ene.penguin_amount, ene.turns_till_arrival) for ene in game.get_enemy_penguin_groups() if
                  ene.destination == iceberg_in_trouble]
-    defenders = [(my.penguin_amount, my.turns_till_arrival) for my in get_my_penguin_groups if
+    defenders = [(my.penguin_amount, my.turns_till_arrival) for my in game.get_my_penguin_groups() if
                  my.destination == iceberg_in_trouble]
     attackers.extend(defenders)
     attackers.sort(key=lambda x: x[1])
-    while (attackers):
+    while attackers:
         real_amount += attackers[0][0] + owner * (attackers[0][1] * iceberg_in_trouble.penguins_per_turn)
         if real_amount < 0:
             owner *= -1
@@ -189,7 +193,7 @@ def do_turn(game):
     :type game: Game
     """
     print(iceberg_values(game))
-    # print(yegor_yael(game))
+    print(yegor_yael(game))
     # print(get_all_distances(game))
     # TODO: defend this code or change it
     if game.turn == 1:
@@ -212,6 +216,5 @@ def do_turn(game):
         best_move = yael(game)
         # print(best_move)
         if best_move is not None:
-            ene_peng_at_arr = best_move[1].penguin_amount + best_move[1].penguins_per_turn * best_move[
-                0].get_turns_till_arrival(best_move[1])
+            # TODO: see why sends -17 penguins, hm
             best_move[0].send_penguins(best_move[1], enemy_penguins_at_arrival(game, best_move[0], best_move[1]) + 1)
