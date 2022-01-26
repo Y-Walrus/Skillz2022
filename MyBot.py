@@ -111,7 +111,7 @@ def yael(game):
             maxes.append((my_iceberg, maxim, my_iceberg.get_turns_till_arrival(maxim) / (
                     my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, maxim))))
 
-    print(maxes)
+    # print(maxes)
     if maxes:
         return max(maxes, key=lambda x: x[2])
     else:
@@ -146,6 +146,41 @@ def get_all_distances(game):
             print(ice_a.get_turns_till_arrival(ice_b))
 
 
+def yegortziahu(game, my_iceberg):
+    if len(game.get_my_icebergs()) == 1:
+        return 0
+    else:  # TODO Check if amount penguins is relevant.
+        return my_iceberg.penguin_amount + my_iceberg.penguins_per_turn * 20 - sum(
+            [my_iceberg.get_turns_till_arrival(ice) for ice in game.get_my_icebergs() if my_iceberg != ice]) / (
+                           len(game.get_my_icebergs()) - 1)
+
+
+def iceberg_values(game):
+    my_icebergs = game.get_my_icebergs()
+    yegor_list = [(ice, yegortziahu(game, ice)) for ice in my_icebergs]
+    # print(yegor_list)
+    return sorted(yegor_list, key=lambda x: x[1], reverse=True)
+
+
+def help_barel(iceberg_in_trouble):
+    owner = 1
+    real_amount = iceberg_in_trouble.amount
+    attackers = [(-ene.penguin_amount, ene.turns_till_arrival) for ene in get_enemy_penguin_groups if
+                 ene.destination == iceberg_in_trouble]
+    defenders = [(my.penguin_amount, my.turns_till_arrival) for my in get_my_penguin_groups if
+                 my.destination == iceberg_in_trouble]
+    attackers.extend(defenders)
+    attackers.sort(key=lambda x: x[1])
+    while (attackers):
+        real_amount += attackers[0][0] + owner * (attackers[0][1] * iceberg_in_trouble.penguins_per_turn)
+        if real_amount < 0:
+            owner *= -1
+            real_amount *= -1
+        attackers.pop(0)
+
+    return real_amount
+
+
 def do_turn(game):
     """
     Makes the bot run a single turn
@@ -153,9 +188,9 @@ def do_turn(game):
     :param game: the current game state
     :type game: Game
     """
-
-    print(yegor_yael(game))
-    print(get_all_distances(game))
+    print(iceberg_values(game))
+    # print(yegor_yael(game))
+    # print(get_all_distances(game))
     # TODO: defend this code or change it
     if game.turn == 1:
         game.get_my_icebergs()[0].upgrade()
@@ -175,7 +210,7 @@ def do_turn(game):
         game.get_my_icebergs()[1].send_penguins(ice, 5)
     elif game.turn > 22:
         best_move = yael(game)
-        print(best_move)
+        # print(best_move)
         if best_move is not None:
             ene_peng_at_arr = best_move[1].penguin_amount + best_move[1].penguins_per_turn * best_move[
                 0].get_turns_till_arrival(best_move[1])
