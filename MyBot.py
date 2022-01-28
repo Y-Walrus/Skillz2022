@@ -38,6 +38,9 @@ def icebergs_distances(game, yegor_ice, team, lowest_to_highest=True):
     elif team == "enemy":
         icebergs = game.get_enemy_icebergs()
 
+    elif team == "neutral":
+        icebergs = game.get_neutral_icebergs()
+
     else:
         print("THAT'S A PROBLEM!")  # TODO: potential fail here
     yegor_list = [ice for ice in icebergs if ice != yegor_ice]
@@ -188,7 +191,8 @@ def help_barel(game, iceberg_in_trouble):
                 attacking_amount -= my_pg
         if attacking_amount > 0:
             real_amount -= attacking_amount
-            real_amount += iceberg_in_trouble.penguins_per_turn * enemy_pgs[0].turns_till_arrival  # minus what was already added
+            real_amount += iceberg_in_trouble.penguins_per_turn * enemy_pgs[
+                0].turns_till_arrival  # minus what was already added
             if real_amount <= 0:
                 warning_list.append((-1 * real_amount + 1, enemy_pgs[0].turns_till_arrival))
         enemy_pgs.pop(0)
@@ -221,6 +225,36 @@ def request_help(game):
                  for ice in game.get_my_icebergs() if help_barel(game, ice) <= 0]
     yael_list.sort(key=lambda x: x[1], reverse=True)
     return yael_list
+
+
+def benzion(game):
+    if len(game.get_all_icebergs()) != 10 or len(game.get_my_icebergs()) != 1 or len(game.get_enemy_icebergs()) != 1:
+        return False
+    if game.get_my_icebergs()[0].penguin_amount != 20 or game.get_enemy_icebergs()[0].penguin_amount != 20:
+        return False
+    if game.get_my_icebergs()[0].get_turns_till_arrival(game.get_enemy_icebergs()[0]) != 29:
+        return False
+
+    neutral_dictionary = {[8, 11, 11, 14, 15, 15, 17, 22, 24]: 2, [7, 11, 11, 13, 15, 16, 17, 22, 24]: 2,
+                          [6, 6, 7, 9, 11, 14, 14, 16, 17]: 2, [6, 6, 8, 9, 11, 11, 13, 15, 19]: 2}
+
+    amount_dictionary = {[8, 11, 11, 14, 15, 15, 17, 22, 24]: 10, [7, 11, 11, 13, 15, 16, 17, 22, 24]: 10,
+                         [6, 6, 7, 9, 11, 14, 14, 16, 17]: 20, [6, 6, 8, 9, 11, 11, 13, 15, 19]: 15}
+
+    for ice in game.get_neutral_icebergs():
+        this_list = icebergs_distances(game, ice, 'neutral')
+        counter = 0
+        for key, value in neutral_dictionary:
+            counter += 1
+            if key == this_list and ice.penguin_amount == amount_dictionary[key]:
+                value -= 1
+                if value == 0:
+                    del neutral_dictionary[key]
+                break
+        if counter == 4:
+            return False
+
+    return True
 
 
 def do_turn(game):
@@ -268,4 +302,4 @@ def do_turn(game):
         if best_move is not None:
             # TODO: see why sends -17 penguins, hm
             best_move[0].send_penguins(best_move[1], enemy_penguins_at_arrival(game, best_move[0], best_move[1]) + 1)
-# if our production is better dont do anythinh
+# if our production is better don't do anything
