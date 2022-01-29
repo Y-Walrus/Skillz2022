@@ -38,9 +38,6 @@ def icebergs_distances(game, yegor_ice, team, lowest_to_highest=True):
     elif team == "enemy":
         icebergs = game.get_enemy_icebergs()
 
-    elif team == "neutral":
-        icebergs = game.get_neutral_icebergs()
-
     else:
         print("THAT'S A PROBLEM!")  # TODO: potential fail here
     yegor_list = [ice for ice in icebergs if ice != yegor_ice]
@@ -95,7 +92,7 @@ def enemy_penguins_at_arrival(game, my, enemy):
     # or (pg.destination==my and pg.source==enemy):
 
 
-def yael(game):
+def yael(game, ices_not_attack):
     '''
     The function chooses the best combination of attacking-attacked icebergs
     :param game
@@ -104,17 +101,20 @@ def yael(game):
     :rtype:
     '''
     maxes = []
-    for i, my_iceberg in enumerate(game.get_my_icebergs()):
+    for my_iceberg in game.get_my_icebergs():
+        # if my_iceberg not in ices_not_attack:
 
-        enemies_list = [ice for ice in game.get_enemy_icebergs() if
-                        my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, ice) > 0]
-        # enemy penguin amount can't be negative
-        # TODO: to consider collisions
-        if enemies_list:
-            maxim = max(enemies_list, key=lambda x: my_iceberg.get_turns_till_arrival(x) / (
-                    my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, x)))
-            maxes.append((my_iceberg, maxim, my_iceberg.get_turns_till_arrival(maxim) / (
-                    my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, maxim))))
+        if not [ene_pg for ene_pg in game.get_enemy_penguin_groups() if ene_pg.destination == my_iceberg]:
+            if my_iceberg.penguin_amount > 30:
+                enemies_list = [ice for ice in game.get_enemy_icebergs() if
+                                my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, ice) > 0]
+                # enemy penguin amount can't be negative
+                # TODO: to consider collisions
+                if enemies_list:
+                    maxim = max(enemies_list, key=lambda x: my_iceberg.get_turns_till_arrival(x) / (
+                            my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, x)))
+                    maxes.append((my_iceberg, maxim, my_iceberg.get_turns_till_arrival(maxim) / (
+                            my_iceberg.penguin_amount - enemy_penguins_at_arrival(game, my_iceberg, maxim))))
 
     # print(maxes)
     if maxes:
@@ -179,52 +179,76 @@ def help_barel(game, iceberg_in_trouble):
                  my.destination == iceberg_in_trouble]
     attackers.extend(defenders)
     attackers.sort(key=lambda x: x[1])
+    print(iceberg_in_trouble.penguin_amount, attackers)
+    print()
 
     warning_list = []
-    real_amount = iceberg_in_trouble.amount
+    real_amount = iceberg_in_trouble.penguin_amount
+    pg_groups = attackers
     enemy_pgs = [enemy_pg for enemy_pg in game.get_enemy_penguin_groups() if enemy_pg.destination == iceberg_in_trouble]
-    while enemy_pgs:
-        attacking_amount = enemy_pgs[0].penguin_amount
-        # add collisions
-        for my_pg in game.get_my_penguin_groups():
-            if my_pg.turns_till_arrival <= enemy_pgs[0].turns_till_arrival:
-                attacking_amount -= my_pg
-        if attacking_amount > 0:
-            real_amount -= attacking_amount
-            real_amount += iceberg_in_trouble.penguins_per_turn * enemy_pgs[
-                0].turns_till_arrival  # minus what was already added
-            if real_amount <= 0:
-                warning_list.append((-1 * real_amount + 1, enemy_pgs[0].turns_till_arrival))
-        enemy_pgs.pop(0)
+    sum_closest = 0
+    while pg_groups:
+        closest_distance = pg_groups[0][1]
+        sum_closest += closest_distance
+        pg_groups = [(pg[0], pg[1] - closest_distance) for pg in pg_groups]
+
+        pg_arrived = [pg[0] for pg in pg_groups if pg[1] == 0]
+        pg_groups = pg_groups[len(pg_arrived):]
+        sum_pg_arrived = sum(pg_arrived)
+        real_amount += iceberg_in_trouble.penguins_per_turn * closest_distance + sum_pg_arrived
+        if real_amount <= 0:
+            warning_list.append((-1 * real_amount + 1, sum_closest))
+
+            # add collisions
 
     return warning_list
 
-    """
-    while attackers:
-        real_amount += attackers[0][0] + owner * (attackers[0][1] * iceberg_in_trouble.penguins_per_turn)
-        if real_amount < 0:
-            return -real_amount
-    """
-    """
-            owner *= -1
-            real_amount *= -1
-        attackers.pop(0)
 
-    return real_amount * owner
-    """
+def send_help(game):
+    defence_succeed = []
+    warning_lists = create_warning_lists(game)
+    print(warning_lists)
+    if warning_lists:
+        warning_lists.sort(key=lambda x: yegortziahu(game, x[0]), reverse=True)
+        for w_l in warning_lists:
+            ice_to_defend = w_l[0]
+            ice_warnings = w_l[1]
+            for warning in ice_warnings:
+                needed_amount = warning[0]
+                time_to_deliever = warning[1]
+                possible_defenders = []
+                for my in game.get_my_icebergs():
+                    if ice_to_defend.get_turns_till_arrival(my) <= time_to_deliever and ice_to_defend != my:
+                        sum_ene_pg = sum([ene_pg.penguin_amount for ene_pg in game.get_enemy_penguin_groups() if
+                                          ene_pg.destination == my])
+                        if my.penguin_amount - sum_ene_pg > 5:
+                            possible_defenders.append(my)
+
+                # possible_defenders.sort(lambda x: yegortziahu(game, x[0]))
+                if possible_defenders:
+                    sum_of_defenders = sum([my.penguin_amount for my in possible_defenders])
+                    print("sum " + str(sum_of_defenders))
+                    print("length " + str(len(possible_defenders)))
+                    if sum_of_defenders >= needed_amount:
+                        defence_succeed.append(ice_to_defend)
+                        for ice in possible_defenders:
+                            ratio = float(ice.penguin_amount) / float(sum_of_defenders)
+                            amount_to_send = int(ratio * needed_amount) + 1
+                            if ice.penguin_amount < amount_to_send:
+                                print("True")
+                                amount_to_send -= 1
+                            ice.send_penguins(ice_to_defend, amount_to_send)
+                            print("ratio: " + str(ratio))
+                            print("amount_to_send: " + str(amount_to_send))
+
+        return defence_succeed
+    else:
+        return []
 
 
-def help_barel_list(game):
-    return [(ice, help_barel(game, ice)) for ice in game.get_my_icebergs()].sort(key=lambda x: x[1], reverse=True)
-
-
-def request_help(game):
-    # consider + instead of *, consider smth instead of sum
-    yael_list = [(ice, -1 * sum([val[0] for val in help_barel(game, ice)]) * yegortziahu(game, ice),
-                  -1 * help_barel(game, ice) + 1)
-                 for ice in game.get_my_icebergs() if help_barel(game, ice) <= 0]
-    yael_list.sort(key=lambda x: x[1], reverse=True)
-    return yael_list
+def create_warning_lists(game):
+    ice_list = [(ice, help_barel(game, ice)) for ice in game.get_my_icebergs()]
+    return [w_l for w_l in ice_list if w_l[1]]
 
 
 def benzion(game):
@@ -285,21 +309,13 @@ def do_turn(game):
                 ice = neutral_iceberg  # TODO: might not be assigned
         game.get_my_icebergs()[1].send_penguins(ice, 5)
     elif game.turn > 22:
-        """
-        defenders_list = iceberg_values(game) # (ice, value)
-        defenders_list.reverse()
-        list_to_defend = request_help(game)  # (ice, value, needed_to_defend + ice.penguins_per_turn * )
-        # TODO: consider defending more than one ice
-        ice_to_defend = list_to_defend[0]
-        defending_amount = 0
-        while defending_amount < ice_to_defend[2]:
-            defending_amount += defenders_list[0][0].penguin_amount
-            defenders_list.pop(0)
-        """
-
-        best_move = yael(game)
+        def_ices = send_help(game)
+        print("ices were defended: " + str(def_ices))
+        best_move = yael(game, def_ices)
         # print(best_move)
         if best_move is not None:
             # TODO: see why sends -17 penguins, hm
             best_move[0].send_penguins(best_move[1], enemy_penguins_at_arrival(game, best_move[0], best_move[1]) + 1)
-# if our production is better don't do anything
+
+# if our production is better dont do anythinh
+
