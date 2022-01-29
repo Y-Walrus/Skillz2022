@@ -311,6 +311,20 @@ def do_turn(game):
     elif game.turn > 22:
         def_ices = send_help(game)
         print("ices were defended: " + str(def_ices))
+        if not def_ices and sum([ice.penguins_per_turn for ice in game.get_enemy_icebergs()]) - sum(
+                [ice.penguins_per_turn for ice in game.get_my_icebergs()]) > 0:
+            for ice in game.get_my_icebergs():
+                if ice.can_upgrade() and not [ene_pg for ene_pg in game.get_enemy_penguin_groups() if
+                                              ene_pg.destination == ice]:
+                    ice.upgrade()
+                    def_ices.append(ice)
+                    break
+        """ # this code beats code frozen
+        if not def_ices:
+            if game.get_my_icebergs()[0].can_upgrade():
+                game.get_my_icebergs()[0].upgrade()
+                def_ices.append(game.get_my_icebergs()[0])
+        """
         best_move = yael(game, def_ices)
         # print(best_move)
         if best_move is not None:
